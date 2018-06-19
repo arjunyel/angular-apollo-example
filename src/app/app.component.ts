@@ -3,7 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular-boost';
 
 import { Observable } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 import { productsQuery } from './types/operation-result-types';
 
 @Component({
@@ -19,7 +19,7 @@ export class AppComponent implements OnInit {
   constructor(private apollo: Apollo) {}
 
   ngOnInit() {
-    this.apollo.watchQuery<productsQuery>({
+    this.todos = this.apollo.watchQuery<productsQuery>({
       query: gql`
       query products {
         allProducts {
@@ -28,7 +28,7 @@ export class AppComponent implements OnInit {
         }
 	    }`,
     }).valueChanges.pipe(
-      tap((res) => console.log(res.data.allProducts))
-    ).subscribe();
+      map((todos) => todos.data)
+    );
   }
 }
