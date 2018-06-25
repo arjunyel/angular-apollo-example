@@ -1,0 +1,5 @@
+<div *ngFor="let tweet of (tweets | async)?.tweets">
+    {{tweet.text}}
+    <ion-icon name="flame" (click)="likeTweet(tweet.id)"></ion-icon>
+    {{tweet.likes}}
+</div>

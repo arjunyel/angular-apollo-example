@@ -14,7 +14,7 @@ export class GraphQLModule {
     apolloBoost: ApolloBoost
   ) {
     apolloBoost.create({
-      uri: 'https://fakerql.com/graphql'
+      uri: 'http://localhost:4000/graphql'
     });
   }
 }

@@ -4,7 +4,7 @@ import { Apollo, gql } from 'apollo-angular-boost';
 
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { productsQuery } from './types/operation-result-types';
+import { tweetsQuery } from './types/operation-result-types';
 
 @Component({
   selector: 'app-root',
@@ -14,21 +14,28 @@ import { productsQuery } from './types/operation-result-types';
 export class AppComponent implements OnInit {
   title = 'app';
 
-  todos: Observable<productsQuery>;
+  tweets: Observable<tweetsQuery>;
 
   constructor(private apollo: Apollo) {}
 
   ngOnInit() {
-    this.todos = this.apollo.watchQuery<productsQuery>({
+    this.tweets = this.apollo.watchQuery<tweetsQuery>({
       query: gql`
-      query products {
-        allProducts {
-          name
-          price
+      query tweets {
+        tweets {
+          id
+          text
+          likes
         }
-	    }`,
+      }`,
     }).valueChanges.pipe(
-      map((todos) => todos.data)
+      map((tweets) => tweets.data)
     );
   }
+
+  likeTweet(id: string) {
+    console.log(id);
+  }
+
+
 }
