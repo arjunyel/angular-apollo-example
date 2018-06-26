@@ -17,9 +17,8 @@ interface User {
 
 interface Tweet {
   id: string;
-  name: string;
-  screenName: string;
-  statusesCount: number;
+  likes: number;
+  text: string;
   userId: string;
 }
 
@@ -30,11 +29,11 @@ const typeDefs = gql`
     name: String!
     screenName: String!
     statusesCount: Int!
-    tweets: [Tweets]!
+    tweets: [Tweet]!
   }
 
   # A Tweet Object
-  type Tweets {
+  type Tweet {
     id: ID!
     text: String!
     userId: String!
@@ -43,7 +42,7 @@ const typeDefs = gql`
   }
 
   type Query {
-    tweets: [Tweets]
+    tweets: [Tweet]
     user(id: String!): User
   }
 
@@ -67,7 +66,7 @@ const resolvers = {
       }
     }
   },
-  Tweets: {
+  Tweet: {
     async user(tweet) {
       try {
         const tweetAuthor = await admin
@@ -107,10 +106,17 @@ const resolvers = {
         const tweetRef = admin
           .firestore()
           .doc(`tweets/${args.id}`);
-        // Increment likes on tweet
-
+        // Increment likes on tweet, in real life you'd use a transaction!
+        let tweetDoc = await tweetRef.get();
+        const tweet = tweetDoc.data() as Tweet;
+        console.log(tweetDoc.data());
+        await tweetRef.update({ likes: tweet.likes + 1 });
+        tweetDoc = await tweetRef.get();
+        console.log('update: ', tweetDoc.data());
+        return tweetDoc.data();
       } catch (error) {
-        
+        console.log(error);
+        throw new ApolloError(error);
       }
     }
   }

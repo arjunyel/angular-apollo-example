@@ -3,7 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular-boost';
 
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, tap } from 'rxjs/operators';
 import { tweetsQuery } from './types/operation-result-types';
 
 @Component({
@@ -33,8 +33,34 @@ export class AppComponent implements OnInit {
     );
   }
 
-  likeTweet(id: string) {
-    console.log(id);
+  likeTweet(id: string, likes: number, text: string) {
+    const likeTweet = gql`
+      mutation likeTweet($id: ID!) {
+        likeTweet(id: $id) {
+          id
+          text
+          likes
+        }
+      }
+    `;
+
+    this.apollo.mutate({
+      mutation: likeTweet,
+      variables: {
+        id
+      },
+      optimisticResponse: {
+        __typename: 'Mutation',
+        likeTweet: {
+          __typename: 'Tweet',
+          id,
+          likes: likes + 1,
+          text
+        }
+      }
+    }).pipe(
+      tap((data) => console.log(data))
+    ).subscribe();
   }
 
 
