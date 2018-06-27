@@ -44,7 +44,7 @@ export class AppComponent implements OnInit {
       }
     `;
 
-    this.apollo.mutate<likeTweetMutation, likeTweetMutationVariables >({
+    this.apollo.mutate<likeTweetMutation, likeTweetMutationVariables>({
       mutation: likeTweet,
       variables: {
         id
