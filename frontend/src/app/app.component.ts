@@ -4,7 +4,7 @@ import { Apollo, gql } from 'apollo-angular-boost';
 
 import { Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
-import { tweetsQuery } from './types/operation-result-types';
+import { tweetsQuery, likeTweetMutation, likeTweetMutationVariables } from './types/operation-result-types';
 
 @Component({
   selector: 'app-root',
@@ -12,22 +12,22 @@ import { tweetsQuery } from './types/operation-result-types';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
-  title = 'app';
 
   tweets: Observable<tweetsQuery>;
+  tweetsQuery = gql`
+  query tweets {
+    tweets {
+      id
+      text
+      likes
+    }
+  }`;
 
   constructor(private apollo: Apollo) {}
 
   ngOnInit() {
     this.tweets = this.apollo.watchQuery<tweetsQuery>({
-      query: gql`
-      query tweets {
-        tweets {
-          id
-          text
-          likes
-        }
-      }`,
+      query: this.tweetsQuery,
     }).valueChanges.pipe(
       map((tweets) => tweets.data)
     );
@@ -44,7 +44,7 @@ export class AppComponent implements OnInit {
       }
     `;
 
-    this.apollo.mutate({
+    this.apollo.mutate<likeTweetMutation, likeTweetMutationVariables >({
       mutation: likeTweet,
       variables: {
         id
@@ -59,9 +59,7 @@ export class AppComponent implements OnInit {
         }
       }
     }).pipe(
-      tap((data) => console.log(data))
+      tap((data) => console.log(data.data))
     ).subscribe();
   }
-
-
 }

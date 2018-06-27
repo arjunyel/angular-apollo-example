@@ -8,3 +8,15 @@ export interface tweetsQuery {
     likes: number,
   } | null > | null,
 };
+
+export interface likeTweetMutationVariables {
+  id: string,
+};
+
+export interface likeTweetMutation {
+  likeTweet:  {
+    id: string,
+    text: string,
+    likes: number,
+  } | null,
+};

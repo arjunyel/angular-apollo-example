@@ -103,19 +103,16 @@ const resolvers = {
   Mutation: {
     likeTweet: async (_, args: {id: string} ) => {
       try {
-        const tweetRef = admin
-          .firestore()
-          .doc(`tweets/${args.id}`);
+        const tweetRef = admin.firestore().doc(`tweets/${args.id}`);
+
         // Increment likes on tweet, in real life you'd use a transaction!
         let tweetDoc = await tweetRef.get();
         const tweet = tweetDoc.data() as Tweet;
-        console.log(tweetDoc.data());
         await tweetRef.update({ likes: tweet.likes + 1 });
+
         tweetDoc = await tweetRef.get();
-        console.log('update: ', tweetDoc.data());
         return tweetDoc.data();
       } catch (error) {
-        console.log(error);
         throw new ApolloError(error);
       }
     }

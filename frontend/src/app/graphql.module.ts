@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { HttpClientModule } from '@angular/common/http';
-// Apollo
 import { ApolloBoostModule, ApolloBoost } from 'apollo-angular-boost';
 
 @NgModule({
