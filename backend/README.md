@@ -6,7 +6,7 @@ An example of a [GraphQL](https://graphql.org/) setup with a Firebase Firestore 
 
 ```bash
 npm init --yes
-npm install apollo-server@beta firebase-admin graphql graphql-tag
+npm install apollo-server firebase-admin graphql
 npm install --save-dev typescript tslint
 ```
 
@@ -23,14 +23,13 @@ You'll also want to set up some scripts and other settings, as of writing here i
   },
   "main": "lib/index.js",
   "dependencies": {
-      "apollo-server": "^2.0.0-beta.10",
+      "apollo-server": "^2.1.0",
       "firebase-admin": "^5.12.1",
-      "graphql": "^0.13.2",
-      "graphql-tag": "^2.9.2"
+      "graphql": "^0.13.2"
   },
   "devDependencies": {
       "tslint": "^5.10.0",
-      "typescript": "^2.9.1"
+      "typescript": "^3.0.3"
   }
 }
 ```

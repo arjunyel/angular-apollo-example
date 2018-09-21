@@ -15,118 +15,87 @@ Generate a new Angular app and install dependencies
 ```bash
 ng new frontend
 cd frontend
-npm install apollo-angular-boost graphql
-npm install apollo-codegen --save-dev
+ng add apollo-angular
+
+npm install --save-dev graphql-code-generator
+npm install --save-dev graphql-codegen-apollo-angular-template
+npm install --save-dev graphql-codegen-introspection-template
 ```
 
-Generate the apoll graphql module
+Because Apollo Angular supports schematics, it creates a ready to use setup for you:
 
-```bash
-ng g module graphql --flat
-```
+Inside the graphql module setup the GraphQL endpoint:
 
-Inside the graphql module setup Apollo Boost
+```diff
+import {NgModule} from '@angular/core';
+import {ApolloModule, APOLLO_OPTIONS} from 'apollo-angular';
+import {HttpLinkModule, HttpLink} from 'apollo-angular-link-http';
+import {InMemoryCache} from 'apollo-cache-inmemory';
 
-```typescript
-import { NgModule } from '@angular/core';
-import { HttpClientModule } from '@angular/common/http';
-import { ApolloBoostModule, ApolloBoost } from 'apollo-angular-boost';
+- const uri = ''; // <-- add the URL of the GraphQL server here
++ const uri = 'http://localhost:4000';
 
-@NgModule({
-  exports: [
-    HttpClientModule,
-    ApolloBoostModule,
-  ]
-})
-export class GraphQLModule {
-  constructor(
-    apolloBoost: ApolloBoost
-  ) {
-    apolloBoost.create({
-      uri: 'http://localhost:4000/graphql'
-    });
-  }
+export function createApollo(httpLink: HttpLink) {
+  return {
+    link: httpLink.create({uri}),
+    cache: new InMemoryCache(),
+  };
 }
 ```
 
-Then add our graphQL module to our app.module.ts
-
-```typescript
-@NgModule({
-  ...
-  imports: [
-    BrowserModule,
-    GraphQLModule
-  ],
-  ...
-})
-export class AppModule { }
-```
+And that's it! The GraphQL Module has been already added to the AppModule.
 
 ## Setup Query
 
-Lets setup our GraphQL query that retrieves all the tweets. In our app.component.ts first we import the tools we need, inject Apollo, and create a new class property holding our tweet query.
+Lets setup our GraphQL query that retrieves all the tweets. In `src/app/graphql` directory first we create a file called `tweets.graphql` with our tweet query:
 
-```typescript
-import { Apollo, gql } from 'apollo-angular-boost';
-
-@Component({
-  selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
-})
-export class AppComponent implements OnInit {
-
-  tweetsQuery = gql`
-  query tweets {
-    tweets {
-      id
-      text
-      likes
-    }
-  }`;
-
-  constructor(private apollo: Apollo) {}
-}
-```
-
-One of the coolest tools Apollo offers is [Apollo Codegen](https://github.com/apollographql/apollo-codegen) which will generate types for our queries.
-
-```bash
-cd src/app
-mkdir types
-```
-
-To start out with, we point apollo-codegen at our GraphQL server to generate a schema.json file.
-
-```bash
-npx apollo-codegen introspect-schema http://localhost:4000/graphql --output ./types/schema.json
-```
-
-Now that we have our schema we have apollo codegen read the gql tag in our typescript files to see which types we are actually calling
-
-```bash
-npx apollo-codegen generate **/*.ts --schema ./types/schema.json --target typescript --output ./types/operation-result-types.ts
-```
-
-Using these types lets add a class property, a tweets observable, and call our query on init
-
-```typescript
-export class AppComponent implements OnInit {
-
-  tweets: Observable<tweetsQuery>;
-
-  ngOnInit() {
-    this.tweets = this.apollo.watchQuery<tweetsQuery>({
-      query: this.tweetsQuery,
-    }).valueChanges.pipe(
-      map((tweets) => tweets.data)
-    );
+```graphql
+query tweets {
+  tweets {
+    id
+    text
+    likes
   }
 }
 ```
 
-The watchQuery is going to update our observable whenever the underlying Apollo store  on our client is updated, even from another query. We'll see that in the next section when we go over optimistic updates.
+One of the most useful tools to work with GraphQL is [GraphQL Code Generator](https://github.com/dotansimha/graphql-code-generator) which will generate types for our queries and also a [ready to use services](https://www.apollographql.com/docs/angular/basics/services.html) introduced in Apollo Angular v1.2.0.
+
+To start out with, we point gql-gen at our GraphQL server to generate a schema.json file.
+
+```bash
+npx gql-gen --schema http://localhost:4000 --template graphql-codegen-introspection-template --out schema.json
+```
+
+Now that we have our schema we have code-gen read the graphql files to see which documents we have
+
+```bash
+npx gql-gen --schema schema.json --template graphql-codegen-apollo-angular-template --out src/app/graphql/index.ts src/app/graphql/*.graphql
+```
+
+Now let's add those commands to npm scripts to make the whole process easier. First one, under `graphql:introspect`, the second one will be `graphql:generate`.
+
+With Apollo Angular and GraphQL Code Generator you don't have to manually inject `Apollo` service and use generated types in every of your query or mutation.
+
+Now lets add a class property, a tweets observable, and call our query on init
+
+```typescript
+import { TweetsGQL, Tweets } from './graphql';
+
+export class AppComponent implements OnInit {
+  tweets: Observable<Tweets.Query>;
+
+  constructor(private tweetsGQL: TweetsGQL) {}
+
+  ngOnInit() {
+    this.tweets = this.tweetsGQL
+      .watch()
+      .valueChanges.pipe(map(tweets => tweets.data));
+  }
+}
+```
+
+The `watch` method is going to update our observable whenever the underlying Apollo store on our client is updated, even from another query. We'll see that in the next section when we go over optimistic updates.
 
 In our app.component.html lets output our tweets and a button/likeTweet function we'll cover in the next section to like a tweet.
 
@@ -138,11 +107,11 @@ In our app.component.html lets output our tweets and a button/likeTweet function
 </div>
 ```
 
- I used [Ionicons](https://ionicons.com/) for the button, when we use web components make sure to add
+I used [Ionicons](https://ionicons.com/) for the button, when we use web components make sure to add
 
- ```typescript
-schemas: [CUSTOM_ELEMENTS_SCHEMA]
- ```
+```typescript
+schemas: [CUSTOM_ELEMENTS_SCHEMA];
+```
 
 in our app.module.ts. When you run the app you should now see tweets displayed on the screen!
 
@@ -194,48 +163,41 @@ Save and reload the server
 npm run serve
 ```
 
-Return back to the app.component.ts and lets start setting up the like tweet function by creating the gql tag we can generate types from
+Return back to our app and lets start setting up the like tweet mutation by create `like-tweet.graphql` file
 
-```typescript
-likeTweet(id: string, likes: number, text: string) {
-  const likeTweet = gql`
-    mutation likeTweet($id: ID!) {
-      likeTweet(id: $id) {
-        id
-        text
-        likes
-      }
-    }
-  `;
+```graphql
+mutation likeTweet($id: ID!) {
+  likeTweet(id: $id) {
+    id
+    text
+    likes
+  }
 }
 ```
 
-Make sure your terminal is in the src/app folder and re-run the apollo codegen
+Make sure your terminal is in the src/app folder and re-run two npm scripts
 
 ```bash
-npx apollo-codegen introspect-schema http://localhost:4000/graphql --output ./types/schema.json
-npx apollo-codegen generate **/*.ts --schema ./types/schema.json --target typescript --output ./types/operation-result-types.ts
+npm run graphql:introspect
+npm run graphql:generate
 ```
 
-Now with our types we are ready to write the mutation function
+Now with our types and services we are ready to write the mutation function
+
+```diff
+- import { TweetsGQL, Tweets } from './graphql';
++ import { TweetsGQL, Tweets, LikeTweetGQL } from './graphql';
+```
 
 ```typescript
-likeTweet(id: string, likes: number, text: string) {
-  const likeTweet = gql`
-    mutation likeTweet($id: ID!) {
-      likeTweet(id: $id) {
-        id
-        text
-        likes
-      }
-    }
-  `;
+constructor(
+  private tweetsGQL: TweetsGQL,
+  private likeTweetGQL: LikeTweetGQL
+) {}
 
-  this.apollo.mutate<likeTweetMutation, likeTweetMutationVariables>({
-    mutation: likeTweet,
-    variables: {
-      id
-    }
+likeTweet(id: string, likes: number, text: string) {
+  this.likeTweetGQL.mutate({
+    id
   }).pipe(
     tap((data) => console.log(data.data))
   ).subscribe();
@@ -253,23 +215,25 @@ Currently when we update the likes it will wait for the server response to updat
 We do this by telling Apollo the type, ID, and values of the object we're going to update. Apollo can update the local store immediately, then when the server response comes it will overwrite it in the store. Change the mutate function:
 
 ```typescript
-this.apollo.mutate<likeTweetMutation, likeTweetMutationVariables>({
-  mutation: likeTweet,
-  variables: {
-    id
-  },
-  optimisticResponse: {
-    __typename: 'Mutation',
-    likeTweet: {
-      __typename: 'Tweet',
+this.likeTweetGQL
+  .mutate(
+    {
       id,
-      likes: likes + 1,
-      text
-    }
-  }
-}).pipe(
-  tap((data) => console.log(data.data))
-).subscribe();
+    },
+    {
+      optimisticResponse: {
+        __typename: 'Mutation',
+        likeTweet: {
+          __typename: 'Tweet',
+          id,
+          likes: likes + 1,
+          text,
+        },
+      },
+    },
+  )
+  .pipe(tap(data => console.log(data.data)))
+  .subscribe();
 ```
 
 You can use your browser's dev tools to slow down your internet connection and see that now when you click the button the number changes instantly! Have fun!
