@@ -1,0 +1,7 @@
+mutation likeTweet($id: ID!) {
+  likeTweet(id: $id) {
+    id
+    text
+    likes
+  }
+}

@@ -1,0 +1,7 @@
+query tweets {
+  tweets {
+    id
+    text
+    likes
+  }
+}
